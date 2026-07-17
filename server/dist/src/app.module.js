@@ -12,12 +12,13 @@ const app_controller_1 = require("./app.controller");
 const app_service_1 = require("./app.service");
 const prisma_module_1 = require("./prisma/prisma.module");
 const websocket_module_1 = require("./websocket/websocket.module");
+const redis_module_1 = require("./redis/redis.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
 exports.AppModule = AppModule = __decorate([
     (0, common_1.Module)({
-        imports: [prisma_module_1.PrismaModule, websocket_module_1.WebsocketModule],
+        imports: [prisma_module_1.PrismaModule, websocket_module_1.WebsocketModule, redis_module_1.RedisModule],
         controllers: [app_controller_1.AppController],
         providers: [app_service_1.AppService],
     })

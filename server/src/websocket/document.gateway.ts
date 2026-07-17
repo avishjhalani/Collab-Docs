@@ -11,34 +11,49 @@ import {
 import { Server, Socket } from 'socket.io';
 import * as Y from 'yjs';
 import { PrismaService } from '../prisma/prisma.service';
+import { RedisService } from '../redis/redis.service';
 
 @WebSocketGateway({
-  cors: {
-    origin: '*', // Allows connections from any origin (we'll lock this down later)
-  },
+  cors: { origin: '*' },
 })
 export class DocumentGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
-  server!: Server;
+  server: Server;
 
-  // In-memory store for loaded documents
-  // Maps: documentId -> Y.Doc
   private activeDocs = new Map<string, Y.Doc>();
+  // Tracks how many local users on this specific server are editing a document
+  private roomUserCounts = new Map<string, number>(); 
 
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private redisService: RedisService,
+  ) {}
 
-  // 1. Handle incoming connections
   handleConnection(client: Socket) {
     console.log(`Client connected: ${client.id}`);
   }
 
-  // 2. Handle disconnections
-  handleDisconnect(client: Socket) {
-    console.log(`Client disconnected: ${client.id}`);
-    // Clean up room activities if necessary
+  async handleDisconnect(client: Socket) {
+    const { docId, username } = client.data;
+    if (!docId) return;
+
+    console.log(`Client disconnected: ${client.id} (${username})`);
+
+    // Decrement local user count for this room
+    const count = (this.roomUserCounts.get(docId) || 1) - 1;
+    this.roomUserCounts.set(docId, count);
+
+    // Clean up Redis subscription if no local users are left on this server instance
+    if (count === 0) {
+      console.log(`No local users left for document ${docId}. Unsubscribing from Redis.`);
+      await this.redisService.unsubscribe(`doc-updates:${docId}`);
+      this.activeDocs.delete(docId);
+      this.roomUserCounts.delete(docId);
+    }
+
+    client.to(docId).emit('user-left', { username, socketId: client.id });
   }
 
-  // 3. Room Management: Join a document session
   @SubscribeMessage('join-document')
   async handleJoinDocument(
     @ConnectedSocket() client: Socket,
@@ -46,43 +61,47 @@ export class DocumentGateway implements OnGatewayConnection, OnGatewayDisconnect
   ) {
     const { docId, username } = data;
     
-    // Join the Socket.io room for this document
     client.join(docId);
-    
-    // Attach details to socket session for tracking
     client.data.username = username;
     client.data.docId = docId;
 
-    console.log(`${username} joined room: ${docId}`);
+    // Track active local users
+    const currentCount = this.roomUserCounts.get(docId) || 0;
+    this.roomUserCounts.set(docId, currentCount + 1);
 
-    // Load document from database or memory
+    // Load Y.Doc in memory
     let ydoc = this.activeDocs.get(docId);
     if (!ydoc) {
       ydoc = new Y.Doc();
-      
-      // Attempt to load from PostgreSQL
-      const dbDoc = await this.prisma.document.findUnique({
-        where: { id: docId },
-      });
-
+      const dbDoc = await this.prisma.document.findUnique({ where: { id: docId } });
       if (dbDoc && dbDoc.content) {
-        // Apply the saved binary state into our active Y.Doc
         Y.applyUpdate(ydoc, dbDoc.content);
       }
       this.activeDocs.set(docId, ydoc);
+
+      // --- REDIS SUBSCRIPTION SETUP ---
+      // If this is the first client on this server instance editing the document,
+      // subscribe to the Redis channel for updates from other server instances.
+      await this.redisService.subscribe(`doc-updates:${docId}`, (messageStr) => {
+        // Decode the message from base64 string back to binary
+        const updateBinary = new Uint8Array(Buffer.from(messageStr, 'base64'));
+        
+        // Apply update to our local server memory
+        Y.applyUpdate(ydoc!, updateBinary);
+
+        // Broadcast to all clients connected to this specific server instance
+        // (Use server.to() instead of client.to() to reach everyone in this room on this server)
+        this.server.to(docId).emit('update-document', Buffer.from(updateBinary));
+      });
     }
 
-    // Send the current state of the document to the newly joined client
     const stateUpdate = Y.encodeStateAsUpdate(ydoc);
     client.emit('init-document-state', Buffer.from(stateUpdate));
-    
-    // Notify others that a new user joined
     client.to(docId).emit('user-joined', { username, socketId: client.id });
   }
 
-  // 4. Document Synchronisation: Sync edits (CRDT binary updates)
   @SubscribeMessage('update-document')
-  handleUpdateDocument(
+  async handleUpdateDocument(
     @ConnectedSocket() client: Socket,
     @MessageBody() updateBinary: Buffer,
   ) {
@@ -91,17 +110,17 @@ export class DocumentGateway implements OnGatewayConnection, OnGatewayDisconnect
 
     const ydoc = this.activeDocs.get(docId);
     if (ydoc) {
-      // 1. Apply the incoming change to the server's in-memory Y.Doc
+      // 1. Apply to local memory
       Y.applyUpdate(ydoc, new Uint8Array(updateBinary));
 
-      // 2. Broadcast the update to all other users in the room
-      client.to(docId).emit('update-document', updateBinary);
+      // 2. Convert binary update to Base64 string for safe transport over Redis
+      const base64Update = Buffer.from(updateBinary).toString('base64');
 
-      // TODO: We will trigger a debounced save to PostgreSQL here in the next milestone!
+      // 3. Publish to Redis so all other server instances receive it
+      await this.redisService.publish(`doc-updates:${docId}`, base64Update);
     }
   }
 
-  // 5. Presence: Share mouse cursors & selections
   @SubscribeMessage('cursor-move')
   handleCursorMove(
     @ConnectedSocket() client: Socket,
@@ -110,7 +129,6 @@ export class DocumentGateway implements OnGatewayConnection, OnGatewayDisconnect
     const docId = client.data.docId;
     if (!docId) return;
 
-    // Broadcast cursor positions to everyone else in the document
     client.to(docId).emit('cursor-move', {
       socketId: client.id,
       username: client.data.username,

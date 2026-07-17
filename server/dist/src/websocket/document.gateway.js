@@ -50,48 +50,69 @@ const websockets_1 = require("@nestjs/websockets");
 const socket_io_1 = require("socket.io");
 const Y = __importStar(require("yjs"));
 const prisma_service_1 = require("../prisma/prisma.service");
+const redis_service_1 = require("../redis/redis.service");
 let DocumentGateway = class DocumentGateway {
     prisma;
+    redisService;
     server;
     activeDocs = new Map();
-    constructor(prisma) {
+    roomUserCounts = new Map();
+    constructor(prisma, redisService) {
         this.prisma = prisma;
+        this.redisService = redisService;
     }
     handleConnection(client) {
         console.log(`Client connected: ${client.id}`);
     }
-    handleDisconnect(client) {
-        console.log(`Client disconnected: ${client.id}`);
+    async handleDisconnect(client) {
+        const { docId, username } = client.data;
+        if (!docId)
+            return;
+        console.log(`Client disconnected: ${client.id} (${username})`);
+        const count = (this.roomUserCounts.get(docId) || 1) - 1;
+        this.roomUserCounts.set(docId, count);
+        if (count === 0) {
+            console.log(`No local users left for document ${docId}. Unsubscribing from Redis.`);
+            await this.redisService.unsubscribe(`doc-updates:${docId}`);
+            this.activeDocs.delete(docId);
+            this.roomUserCounts.delete(docId);
+        }
+        client.to(docId).emit('user-left', { username, socketId: client.id });
     }
     async handleJoinDocument(client, data) {
         const { docId, username } = data;
         client.join(docId);
         client.data.username = username;
         client.data.docId = docId;
-        console.log(`${username} joined room: ${docId}`);
+        const currentCount = this.roomUserCounts.get(docId) || 0;
+        this.roomUserCounts.set(docId, currentCount + 1);
         let ydoc = this.activeDocs.get(docId);
         if (!ydoc) {
             ydoc = new Y.Doc();
-            const dbDoc = await this.prisma.document.findUnique({
-                where: { id: docId },
-            });
+            const dbDoc = await this.prisma.document.findUnique({ where: { id: docId } });
             if (dbDoc && dbDoc.content) {
                 Y.applyUpdate(ydoc, dbDoc.content);
             }
             this.activeDocs.set(docId, ydoc);
+            await this.redisService.subscribe(`doc-updates:${docId}`, (messageStr) => {
+                const updateBinary = new Uint8Array(Buffer.from(messageStr, 'base64'));
+                Y.applyUpdate(ydoc, updateBinary);
+                this.server.to(docId).emit('update-document', Buffer.from(updateBinary));
+            });
         }
         const stateUpdate = Y.encodeStateAsUpdate(ydoc);
         client.emit('init-document-state', Buffer.from(stateUpdate));
         client.to(docId).emit('user-joined', { username, socketId: client.id });
     }
-    handleUpdateDocument(client, updateBinary) {
+    async handleUpdateDocument(client, updateBinary) {
         const docId = client.data.docId;
         if (!docId)
             return;
         const ydoc = this.activeDocs.get(docId);
         if (ydoc) {
             Y.applyUpdate(ydoc, new Uint8Array(updateBinary));
-            client.to(docId).emit('update-document', updateBinary);
+            const base64Update = Buffer.from(updateBinary).toString('base64');
+            await this.redisService.publish(`doc-updates:${docId}`, base64Update);
         }
     }
     handleCursorMove(client, cursorData) {
@@ -125,7 +146,7 @@ __decorate([
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [socket_io_1.Socket,
         Buffer]),
-    __metadata("design:returntype", void 0)
+    __metadata("design:returntype", Promise)
 ], DocumentGateway.prototype, "handleUpdateDocument", null);
 __decorate([
     (0, websockets_1.SubscribeMessage)('cursor-move'),
@@ -137,10 +158,9 @@ __decorate([
 ], DocumentGateway.prototype, "handleCursorMove", null);
 exports.DocumentGateway = DocumentGateway = __decorate([
     (0, websockets_1.WebSocketGateway)({
-        cors: {
-            origin: '*',
-        },
+        cors: { origin: '*' },
     }),
-    __metadata("design:paramtypes", [prisma_service_1.PrismaService])
+    __metadata("design:paramtypes", [prisma_service_1.PrismaService,
+        redis_service_1.RedisService])
 ], DocumentGateway);
 //# sourceMappingURL=document.gateway.js.map

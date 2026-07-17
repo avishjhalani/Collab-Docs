@@ -5,4 +5,6 @@ import { DocumentGateway } from './document.gateway';
 @Module({
   providers: [DocumentGateway],
 })
-export class WebsocketModule {}
+export class WebsocketModule {
+  
+}
