@@ -49,20 +49,42 @@ exports.DocumentGateway = void 0;
 const websockets_1 = require("@nestjs/websockets");
 const socket_io_1 = require("socket.io");
 const Y = __importStar(require("yjs"));
+const jwt_1 = require("@nestjs/jwt");
 const prisma_service_1 = require("../prisma/prisma.service");
 const redis_service_1 = require("../redis/redis.service");
 let DocumentGateway = class DocumentGateway {
     prisma;
     redisService;
+    jwtService;
     server;
     activeDocs = new Map();
     roomUserCounts = new Map();
-    constructor(prisma, redisService) {
+    constructor(prisma, redisService, jwtService) {
         this.prisma = prisma;
         this.redisService = redisService;
+        this.jwtService = jwtService;
     }
-    handleConnection(client) {
-        console.log(`Client connected: ${client.id}`);
+    async handleConnection(client) {
+        try {
+            const token = client.handshake.auth?.token ||
+                client.handshake.query?.token;
+            if (!token) {
+                console.log(`Connection rejected: No token provided (${client.id})`);
+                client.disconnect(true);
+                return;
+            }
+            const payload = this.jwtService.verify(token, {
+                secret: process.env.JWT_SECRET || 'secure-crdt-editor-token-key-2026',
+            });
+            client.data.userId = payload.sub;
+            client.data.username = payload.username;
+            client.data.email = payload.email;
+            console.log(`WebSocket Authenticated: ${client.data.username} (${client.id})`);
+        }
+        catch (err) {
+            console.log(`Connection rejected: Invalid token (${client.id})`);
+            client.disconnect(true);
+        }
     }
     async handleDisconnect(client) {
         const { docId, username } = client.data;
@@ -80,9 +102,9 @@ let DocumentGateway = class DocumentGateway {
         client.to(docId).emit('user-left', { username, socketId: client.id });
     }
     async handleJoinDocument(client, data) {
-        const { docId, username } = data;
+        const { docId } = data;
+        const username = client.data.username;
         client.join(docId);
-        client.data.username = username;
         client.data.docId = docId;
         const currentCount = this.roomUserCounts.get(docId) || 0;
         this.roomUserCounts.set(docId, currentCount + 1);
@@ -125,6 +147,15 @@ let DocumentGateway = class DocumentGateway {
             ...cursorData,
         });
     }
+    handleAwarenessUpdate(client, awarenessBinary) {
+        const docId = client.data.docId;
+        if (!docId)
+            return;
+        client.to(docId).emit('awareness-update', awarenessBinary);
+    }
+    handlePing() {
+        return 'pong';
+    }
 };
 exports.DocumentGateway = DocumentGateway;
 __decorate([
@@ -156,11 +187,27 @@ __decorate([
     __metadata("design:paramtypes", [socket_io_1.Socket, Object]),
     __metadata("design:returntype", void 0)
 ], DocumentGateway.prototype, "handleCursorMove", null);
+__decorate([
+    (0, websockets_1.SubscribeMessage)('awareness-update'),
+    __param(0, (0, websockets_1.ConnectedSocket)()),
+    __param(1, (0, websockets_1.MessageBody)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [socket_io_1.Socket,
+        Buffer]),
+    __metadata("design:returntype", void 0)
+], DocumentGateway.prototype, "handleAwarenessUpdate", null);
+__decorate([
+    (0, websockets_1.SubscribeMessage)('ping'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", void 0)
+], DocumentGateway.prototype, "handlePing", null);
 exports.DocumentGateway = DocumentGateway = __decorate([
     (0, websockets_1.WebSocketGateway)({
         cors: { origin: '*' },
     }),
     __metadata("design:paramtypes", [prisma_service_1.PrismaService,
-        redis_service_1.RedisService])
+        redis_service_1.RedisService,
+        jwt_1.JwtService])
 ], DocumentGateway);
 //# sourceMappingURL=document.gateway.js.map
