@@ -1,7 +1,8 @@
 # Real-Time Collaborative Document Engine
 
-A high-performance, SaaS-style real-time collaborative document workspace. It features Yjs CRDTs for conflict-free typing, live cursor presence, a dark glassmorphic dashboard, and an elegant writing canvas inspired by Notion.
+A high-performance, SaaS-style real-time collaborative document workspace. It features Yjs CRDTs for conflict-free typing, live cursor presence, a dark glassmorphic dashboard, and an elegant writing canvas .
 
+LINK: https://collabdocs-ten.vercel.app/
 ---
 
 ## 🚀 Key Features
