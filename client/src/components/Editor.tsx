@@ -628,7 +628,7 @@ export default function Editor({ token, username, docId, onBackToDashboard, onSe
           )}
 
           {/* Main Paper Canvas */}
-          <div className="w-full max-w-3xl rounded-3xl border border-zinc-900/60 bg-zinc-950/20 backdrop-blur-xl shadow-2xl relative">
+          <div className="w-full max-w-3xl rounded-3xl border border-zinc-900/60 bg-zinc-950/20 backdrop-blur-xl shadow-2xl relative editor-card-container">
             <EditorContent editor={editor} />
           </div>
         </div>

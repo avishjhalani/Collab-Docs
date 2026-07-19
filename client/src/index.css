@@ -1,9 +1,9 @@
 @import "tailwindcss";
 
 body {
-  @apply bg-black text-zinc-100 min-h-screen antialiased overflow-x-hidden relative;
-  background-image: radial-gradient(circle at 10% 20%, rgba(124, 58, 237, 0.06), transparent 45%),
-                    radial-gradient(circle at 90% 80%, rgba(79, 70, 229, 0.06), transparent 45%);
+  @apply bg-black text-zinc-200 min-h-screen antialiased overflow-x-hidden relative;
+  background-image: radial-gradient(circle at 10% 20%, rgba(124, 58, 237, 0.05), transparent 45%),
+                    radial-gradient(circle at 90% 80%, rgba(79, 70, 229, 0.05), transparent 45%);
 }
 
 @keyframes pulseGlow {
@@ -16,7 +16,7 @@ body {
   width: 500px;
   height: 500px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(124, 58, 237, 0.09) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(124, 58, 237, 0.08) 0%, transparent 70%);
   filter: blur(50px);
   animation: pulseGlow 15s infinite alternate;
   pointer-events: none;
@@ -28,16 +28,32 @@ body {
   width: 600px;
   height: 600px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(79, 70, 229, 0.09) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(79, 70, 229, 0.08) 0%, transparent 70%);
   filter: blur(60px);
   animation: pulseGlow 22s infinite alternate-reverse;
   pointer-events: none;
   z-index: 0;
 }
 
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 99px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
 /* TipTap Editor Styling - Custom Dark Mode Editor Theme */
 .ProseMirror {
-  @apply outline-none min-h-[400px] text-slate-200 leading-relaxed text-lg p-6;
+  @apply outline-none min-h-[450px] text-zinc-300 leading-relaxed text-[16px] md:text-[17px] p-8;
 }
 
 .ProseMirror p {
@@ -45,11 +61,44 @@ body {
 }
 
 .ProseMirror h1 {
-  @apply text-3xl font-extrabold tracking-tight text-white mb-6 mt-4;
+  @apply text-3xl font-extrabold tracking-tight text-white mb-6 mt-4 bg-gradient-to-r from-white via-zinc-100 to-zinc-400 bg-clip-text text-transparent;
 }
 
 .ProseMirror h2 {
-  @apply text-2xl font-bold tracking-tight text-white mb-4 mt-4;
+  @apply text-2xl font-bold tracking-tight text-zinc-100 mb-4 mt-6;
+}
+
+/* Bullet list & ordered list styling (Fixes default Tailwind reset) */
+.ProseMirror ul {
+  list-style-type: disc;
+  @apply pl-6 mb-4 space-y-1 text-zinc-300;
+}
+
+.ProseMirror ol {
+  list-style-type: decimal;
+  @apply pl-6 mb-4 space-y-1 text-zinc-300;
+}
+
+.ProseMirror li {
+  @apply pl-1;
+}
+
+/* Code inline styling */
+.ProseMirror code {
+  @apply bg-zinc-900/80 text-violet-400 font-mono text-[14px] px-1.5 py-0.5 rounded border border-zinc-800/40;
+}
+
+/* Code Block block styling */
+.ProseMirror pre {
+  @apply bg-zinc-950 border border-zinc-900 rounded-xl p-4.5 font-mono text-[13px] text-zinc-300 mb-6 overflow-x-auto shadow-inner relative;
+}
+
+.ProseMirror pre code {
+  background: transparent;
+  padding: 0;
+  border: none;
+  color: inherit;
+  font-size: inherit;
 }
 
 /* Collaborative Cursors Styling */
@@ -68,13 +117,23 @@ body {
   position: absolute;
   top: -1.4em;
   left: -2px;
-  font-size: 11px;
+  font-size: 10px;
   font-style: normal;
-  font-weight: 600;
+  font-weight: 700;
   line-height: normal;
   user-select: none;
   color: #fff;
-  padding: 1px 4px;
-  border-radius: 3px 3px 3px 0;
+  padding: 1px 5.5px;
+  border-radius: 4px 4px 4px 0;
   white-space: nowrap;
+}
+
+/* Editor card focused highlight */
+.editor-card-container {
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.editor-card-container:focus-within {
+  @apply border-zinc-800;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.90), 0 0 25px rgba(124, 58, 237, 0.08);
 }
