@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { 
   Plus, FileText, LogOut, Clock, Calendar, 
-  User, Trash2, Cpu, Activity, Database 
+  User, Trash2, Database, Cloud 
 } from 'lucide-react';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
@@ -169,7 +169,7 @@ export default function Dashboard({ token, username, onSelectDocument, onLogout 
         </div>
 
         {/* Workspace Statistics Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-8">
           <div className="p-5 rounded-2xl border border-zinc-900 bg-zinc-950/40 backdrop-blur-xl flex items-center gap-4">
             <div className="p-3 rounded-xl bg-violet-500/10 text-violet-400">
               <Database className="w-5 h-5" />
@@ -181,25 +181,15 @@ export default function Dashboard({ token, username, onSelectDocument, onLogout 
           </div>
 
           <div className="p-5 rounded-2xl border border-zinc-900 bg-zinc-950/40 backdrop-blur-xl flex items-center gap-4">
-            <div className="p-3 rounded-xl bg-indigo-500/10 text-indigo-400">
-              <Activity className="w-5 h-5" />
+            <div className="p-3 rounded-xl bg-emerald-500/10 text-emerald-400">
+              <Cloud className="w-5 h-5" />
             </div>
             <div>
-              <span className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Engine Status</span>
+              <span className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Sync Status</span>
               <h4 className="text-xl font-black text-emerald-400 mt-0.5 flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping inline-block" />
-                <span>Active</span>
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse inline-block" />
+                <span>Cloud Synced</span>
               </h4>
-            </div>
-          </div>
-
-          <div className="p-5 rounded-2xl border border-zinc-900 bg-zinc-950/40 backdrop-blur-xl flex items-center gap-4">
-            <div className="p-3 rounded-xl bg-cyan-500/10 text-cyan-400">
-              <Cpu className="w-5 h-5" />
-            </div>
-            <div>
-              <span className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Cluster Peers</span>
-              <h4 className="text-xl font-black text-white mt-0.5">Redis Sync</h4>
             </div>
           </div>
         </div>
