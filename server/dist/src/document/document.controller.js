@@ -30,6 +30,12 @@ let DocumentController = class DocumentController {
     getOne(id, req) {
         return this.documentService.getDocument(id, req.user.id);
     }
+    delete(id, req) {
+        return this.documentService.deleteDocument(id, req.user.id);
+    }
+    update(id, body, req) {
+        return this.documentService.updateDocument(id, body.title, req.user.id);
+    }
 };
 exports.DocumentController = DocumentController;
 __decorate([
@@ -55,6 +61,23 @@ __decorate([
     __metadata("design:paramtypes", [String, Object]),
     __metadata("design:returntype", void 0)
 ], DocumentController.prototype, "getOne", null);
+__decorate([
+    (0, common_1.Delete)(':id'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Request)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:returntype", void 0)
+], DocumentController.prototype, "delete", null);
+__decorate([
+    (0, common_1.Put)(':id'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Body)()),
+    __param(2, (0, common_1.Request)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object, Object]),
+    __metadata("design:returntype", void 0)
+], DocumentController.prototype, "update", null);
 exports.DocumentController = DocumentController = __decorate([
     (0, common_1.Controller)('documents'),
     (0, common_1.UseGuards)((0, passport_1.AuthGuard)('jwt')),

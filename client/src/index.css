@@ -1,9 +1,38 @@
 @import "tailwindcss";
 
 body {
-  @apply bg-slate-950 text-slate-100 min-h-screen antialiased;
-  background-image: radial-gradient(circle at top right, rgba(99, 102, 241, 0.05), transparent 40%),
-                    radial-gradient(circle at bottom left, rgba(168, 85, 247, 0.05), transparent 40%);
+  @apply bg-black text-zinc-100 min-h-screen antialiased overflow-x-hidden relative;
+  background-image: radial-gradient(circle at 10% 20%, rgba(124, 58, 237, 0.06), transparent 45%),
+                    radial-gradient(circle at 90% 80%, rgba(79, 70, 229, 0.06), transparent 45%);
+}
+
+@keyframes pulseGlow {
+  0%, 100% { transform: scale(1); opacity: 0.4; }
+  50% { transform: scale(1.08); opacity: 0.6; }
+}
+
+.ambient-glow-1 {
+  position: absolute;
+  width: 500px;
+  height: 500px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(124, 58, 237, 0.09) 0%, transparent 70%);
+  filter: blur(50px);
+  animation: pulseGlow 15s infinite alternate;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.ambient-glow-2 {
+  position: absolute;
+  width: 600px;
+  height: 600px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(79, 70, 229, 0.09) 0%, transparent 70%);
+  filter: blur(60px);
+  animation: pulseGlow 22s infinite alternate-reverse;
+  pointer-events: none;
+  z-index: 0;
 }
 
 /* TipTap Editor Styling - Custom Dark Mode Editor Theme */

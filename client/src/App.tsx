@@ -58,6 +58,7 @@ function App() {
         username={username}
         docId={selectedDocId}
         onBackToDashboard={handleBackToDashboard}
+        onSelectDocument={handleSelectDocument}
       />
     );
   }

@@ -26,4 +26,22 @@ export declare class DocumentController {
         createdAt: Date;
         updatedAt: Date;
     }>;
+    delete(id: string, req: any): Promise<{
+        id: string;
+        title: string;
+        content: import("@prisma/client/runtime/client").Bytes | null;
+        ownerId: string | null;
+        createdAt: Date;
+        updatedAt: Date;
+    }>;
+    update(id: string, body: {
+        title: string;
+    }, req: any): Promise<{
+        id: string;
+        title: string;
+        content: import("@prisma/client/runtime/client").Bytes | null;
+        ownerId: string | null;
+        createdAt: Date;
+        updatedAt: Date;
+    }>;
 }

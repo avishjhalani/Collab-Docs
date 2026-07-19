@@ -24,4 +24,20 @@ export declare class DocumentService {
         createdAt: Date;
         updatedAt: Date;
     }>;
+    deleteDocument(docId: string, userId: string): Promise<{
+        id: string;
+        title: string;
+        content: import("@prisma/client/runtime/client").Bytes | null;
+        ownerId: string | null;
+        createdAt: Date;
+        updatedAt: Date;
+    }>;
+    updateDocument(docId: string, title: string, userId: string): Promise<{
+        id: string;
+        title: string;
+        content: import("@prisma/client/runtime/client").Bytes | null;
+        ownerId: string | null;
+        createdAt: Date;
+        updatedAt: Date;
+    }>;
 }

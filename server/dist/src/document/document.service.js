@@ -48,6 +48,41 @@ let DocumentService = class DocumentService {
         }
         return doc;
     }
+    async deleteDocument(docId, userId) {
+        const doc = await this.prisma.document.findFirst({
+            where: {
+                id: docId,
+                ownerId: userId,
+            },
+        });
+        if (!doc) {
+            throw new common_1.NotFoundException('Document not found or unauthorized');
+        }
+        return this.prisma.document.delete({
+            where: {
+                id: docId,
+            },
+        });
+    }
+    async updateDocument(docId, title, userId) {
+        const doc = await this.prisma.document.findFirst({
+            where: {
+                id: docId,
+                ownerId: userId,
+            },
+        });
+        if (!doc) {
+            throw new common_1.NotFoundException('Document not found or unauthorized');
+        }
+        return this.prisma.document.update({
+            where: {
+                id: docId,
+            },
+            data: {
+                title,
+            },
+        });
+    }
 };
 exports.DocumentService = DocumentService;
 exports.DocumentService = DocumentService = __decorate([

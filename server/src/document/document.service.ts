@@ -42,4 +42,44 @@ export class DocumentService {
     }
     return doc;
   }
+
+  // 4. Delete a document
+  async deleteDocument(docId: string, userId: string) {
+    // Only the owner is allowed to delete a document
+    const doc = await this.prisma.document.findFirst({
+      where: {
+        id: docId,
+        ownerId: userId,
+      },
+    });
+    if (!doc) {
+      throw new NotFoundException('Document not found or unauthorized');
+    }
+    return this.prisma.document.delete({
+      where: {
+        id: docId,
+      },
+    });
+  }
+
+  // 5. Update document title
+  async updateDocument(docId: string, title: string, userId: string) {
+    const doc = await this.prisma.document.findFirst({
+      where: {
+        id: docId,
+        ownerId: userId,
+      },
+    });
+    if (!doc) {
+      throw new NotFoundException('Document not found or unauthorized');
+    }
+    return this.prisma.document.update({
+      where: {
+        id: docId,
+      },
+      data: {
+        title,
+      },
+    });
+  }
 }

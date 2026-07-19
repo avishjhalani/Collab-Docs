@@ -1,5 +1,4 @@
-// server/src/document/document.controller.ts
-import { Controller, Post, Get, Param, Body, UseGuards, Request } from '@nestjs/common';
+import { Controller, Post, Get, Delete, Put, Param, Body, UseGuards, Request } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { DocumentService } from './document.service';
 
@@ -25,5 +24,17 @@ export class DocumentController {
   @Get(':id')
   getOne(@Param('id') id: string, @Request() req) {
     return this.documentService.getDocument(id, req.user.id);
+  }
+
+  // 4. Delete a document
+  @Delete(':id')
+  delete(@Param('id') id: string, @Request() req) {
+    return this.documentService.deleteDocument(id, req.user.id);
+  }
+
+  // 5. Update document title
+  @Put(':id')
+  update(@Param('id') id: string, @Body() body: { title: string }, @Request() req) {
+    return this.documentService.updateDocument(id, body.title, req.user.id);
   }
 }
