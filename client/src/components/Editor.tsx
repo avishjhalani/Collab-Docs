@@ -41,8 +41,8 @@ export default function Editor({ token, username, docId, onBackToDashboard }: Ed
   const [error, setError] = useState('');
 
   const socketRef = useRef<Socket | null>(null);
-  const ydocRef = useRef<Y.Doc | null>(null);
-  const awarenessRef = useRef<Awareness | null>(null);
+  const [ydoc] = useState(() => new Y.Doc());
+  const [awareness] = useState(() => new Awareness(ydoc));
 
   // 1. Fetch document title on load
   useEffect(() => {
@@ -65,14 +65,8 @@ export default function Editor({ token, username, docId, onBackToDashboard }: Ed
     fetchDocDetails();
   }, [docId, token]);
 
-  // 2. Initialize Yjs, Socket.io, and Awareness
+  // 2. Initialize Socket.io connection and listeners
   useEffect(() => {
-    // Create Y.Doc and Awareness
-    const ydoc = new Y.Doc();
-    const awareness = new Awareness(ydoc);
-    ydocRef.current = ydoc;
-    awarenessRef.current = awareness;
-
     // Connect to WebSocket
     setSyncStatus('connecting');
     const socket = io('http://localhost:3000', {
@@ -160,13 +154,17 @@ export default function Editor({ token, username, docId, onBackToDashboard }: Ed
     // Clean up on component destruction
     return () => {
       socket.disconnect();
-      ydoc.destroy();
-      awareness.destroy();
-      ydocRef.current = null;
-      awarenessRef.current = null;
       socketRef.current = null;
     };
-  }, [docId, token, username]);
+  }, [docId, token, username, ydoc, awareness]);
+
+  // Cleanup Yjs resources on component unmount
+  useEffect(() => {
+    return () => {
+      ydoc.destroy();
+      awareness.destroy();
+    };
+  }, [ydoc, awareness]);
 
   // 3. Initialize Tiptap Editor
   const editor = useEditor({
@@ -175,10 +173,10 @@ export default function Editor({ token, username, docId, onBackToDashboard }: Ed
         history: false, // Collaborative extensions handle their own undo/redo
       }),
       Collaboration.configure({
-        document: ydocRef.current || new Y.Doc(),
+        document: ydoc,
       }),
       CollaborationCursor.configure({
-        provider: { awareness: awarenessRef.current! },
+        provider: { awareness },
         user: {
           name: username,
           color: getColorForUsername(username),
@@ -190,7 +188,7 @@ export default function Editor({ token, username, docId, onBackToDashboard }: Ed
         class: 'ProseMirror focus:outline-none min-h-[500px] max-w-none text-slate-200 leading-relaxed text-lg p-8 select-text',
       },
     },
-  }, [ydocRef.current]);
+  }, [ydoc]);
 
   const handleShare = () => {
     // Construct the direct shareable URL
