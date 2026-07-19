@@ -15,6 +15,10 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     this.publisherClient = createClient({ url: redisUrl });
     this.subscriberClient = this.publisherClient.duplicate();
 
+    // Handle connection error events to prevent process crashes in production
+    this.publisherClient.on('error', (err) => console.error('Redis Publisher Client Error:', err));
+    this.subscriberClient.on('error', (err) => console.error('Redis Subscriber Client Error:', err));
+
     // Connect both clients
     await Promise.all([
       this.publisherClient.connect(),

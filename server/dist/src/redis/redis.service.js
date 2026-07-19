@@ -16,6 +16,8 @@ let RedisService = class RedisService {
         const redisUrl = process.env.REDIS_URL || 'redis://localhost:6380';
         this.publisherClient = (0, redis_1.createClient)({ url: redisUrl });
         this.subscriberClient = this.publisherClient.duplicate();
+        this.publisherClient.on('error', (err) => console.error('Redis Publisher Client Error:', err));
+        this.subscriberClient.on('error', (err) => console.error('Redis Subscriber Client Error:', err));
         await Promise.all([
             this.publisherClient.connect(),
             this.subscriberClient.connect(),
