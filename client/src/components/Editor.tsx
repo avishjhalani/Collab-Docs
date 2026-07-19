@@ -315,10 +315,7 @@ export default function Editor({ token, username, docId, onBackToDashboard, onSe
   }
 
   return (
-    <div className="min-h-screen bg-black text-zinc-100 flex relative overflow-hidden">
-      {/* Background Soft Glow Orbs */}
-      <div className="absolute top-20 right-20 ambient-glow-1" />
-      <div className="absolute bottom-20 left-40 ambient-glow-2" />
+    <div className="min-h-screen bg-[#0e0e11] text-zinc-100 flex relative overflow-hidden">
 
       {/* Left Sidebar Panel */}
       <aside 
@@ -627,8 +624,8 @@ export default function Editor({ token, username, docId, onBackToDashboard, onSe
             </div>
           )}
 
-          {/* Main Paper Canvas */}
-          <div className="w-full max-w-3xl rounded-3xl border border-zinc-900/60 bg-zinc-950/20 backdrop-blur-xl shadow-2xl relative editor-card-container">
+          {/* Main Paper Canvas (Distinct Document Sheet) */}
+          <div className="w-full max-w-3xl min-h-[75vh] rounded-2xl border border-zinc-800/40 bg-zinc-900 shadow-2xl relative editor-card-container">
             <EditorContent editor={editor} />
           </div>
         </div>
