@@ -36,6 +36,9 @@ let DocumentController = class DocumentController {
     update(id, body, req) {
         return this.documentService.updateDocument(id, body.title, req.user.id);
     }
+    share(id, body, req) {
+        return this.documentService.shareDocument(id, body.email, req.user.id);
+    }
 };
 exports.DocumentController = DocumentController;
 __decorate([
@@ -78,6 +81,15 @@ __decorate([
     __metadata("design:paramtypes", [String, Object, Object]),
     __metadata("design:returntype", void 0)
 ], DocumentController.prototype, "update", null);
+__decorate([
+    (0, common_1.Post)(':id/share'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Body)()),
+    __param(2, (0, common_1.Request)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object, Object]),
+    __metadata("design:returntype", void 0)
+], DocumentController.prototype, "share", null);
 exports.DocumentController = DocumentController = __decorate([
     (0, common_1.Controller)('documents'),
     (0, common_1.UseGuards)((0, passport_1.AuthGuard)('jwt')),

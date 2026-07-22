@@ -27,24 +27,50 @@ let DocumentService = class DocumentService {
     }
     async getUserDocuments(userId) {
         return this.prisma.document.findMany({
-            where: { ownerId: userId },
+            where: {
+                OR: [
+                    { ownerId: userId },
+                    { collaborators: { some: { userId } } },
+                ],
+            },
             orderBy: { updatedAt: 'desc' },
             select: {
                 id: true,
                 title: true,
+                ownerId: true,
                 createdAt: true,
                 updatedAt: true,
+                owner: {
+                    select: {
+                        username: true,
+                        email: true,
+                    },
+                },
             },
         });
     }
     async getDocument(docId, userId) {
-        const doc = await this.prisma.document.findUnique({
+        const doc = await this.prisma.document.findFirst({
             where: {
                 id: docId,
+                OR: [
+                    { ownerId: userId },
+                    { collaborators: { some: { userId } } },
+                ],
+            },
+            include: {
+                owner: {
+                    select: { username: true, email: true },
+                },
+                collaborators: {
+                    include: {
+                        user: { select: { username: true, email: true } },
+                    },
+                },
             },
         });
         if (!doc) {
-            throw new common_1.NotFoundException('Document not found');
+            throw new common_1.NotFoundException('Document not found or unauthorized');
         }
         return doc;
     }
@@ -68,7 +94,10 @@ let DocumentService = class DocumentService {
         const doc = await this.prisma.document.findFirst({
             where: {
                 id: docId,
-                ownerId: userId,
+                OR: [
+                    { ownerId: userId },
+                    { collaborators: { some: { userId } } },
+                ],
             },
         });
         if (!doc) {
@@ -80,6 +109,43 @@ let DocumentService = class DocumentService {
             },
             data: {
                 title,
+            },
+        });
+    }
+    async shareDocument(docId, inviteeEmail, ownerId) {
+        const doc = await this.prisma.document.findUnique({
+            where: { id: docId },
+        });
+        if (!doc) {
+            throw new common_1.NotFoundException('Document not found');
+        }
+        if (doc.ownerId !== ownerId) {
+            throw new common_1.ForbiddenException('Only the document owner can share it');
+        }
+        const invitee = await this.prisma.user.findUnique({
+            where: { email: inviteeEmail },
+        });
+        if (!invitee) {
+            throw new common_1.NotFoundException('No user found with this email');
+        }
+        if (doc.ownerId === invitee.id) {
+            throw new common_1.ConflictException('User is already the owner of this document');
+        }
+        const existingCollab = await this.prisma.collaborator.findUnique({
+            where: {
+                userId_documentId: {
+                    userId: invitee.id,
+                    documentId: docId,
+                },
+            },
+        });
+        if (existingCollab) {
+            throw new common_1.ConflictException('Document is already shared with this user');
+        }
+        return this.prisma.collaborator.create({
+            data: {
+                userId: invitee.id,
+                documentId: docId,
             },
         });
     }

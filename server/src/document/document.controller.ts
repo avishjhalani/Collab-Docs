@@ -1,3 +1,4 @@
+// server/src/document/document.controller.ts
 import { Controller, Post, Get, Delete, Put, Param, Body, UseGuards, Request } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { DocumentService } from './document.service';
@@ -10,11 +11,10 @@ export class DocumentController {
   // 1. Create a new document
   @Post()
   create(@Body() body: { title: string }, @Request() req) {
-    // req.user is automatically attached by our JwtStrategy
     return this.documentService.createDocument(body.title, req.user.id);
   }
 
-  // 2. Get all documents owned by logged-in user
+  // 2. Get all documents (Owned OR Collaborated on)
   @Get()
   getAll(@Request() req) {
     return this.documentService.getUserDocuments(req.user.id);
@@ -36,5 +36,15 @@ export class DocumentController {
   @Put(':id')
   update(@Param('id') id: string, @Body() body: { title: string }, @Request() req) {
     return this.documentService.updateDocument(id, body.title, req.user.id);
+  }
+
+  // 6. Share document endpoint
+  @Post(':id/share')
+  share(
+    @Param('id') id: string,
+    @Body() body: { email: string },
+    @Request() req,
+  ) {
+    return this.documentService.shareDocument(id, body.email, req.user.id);
   }
 }
